@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DMV Property Finder
+
+A Next.js application that scrapes real estate websites to find properties in the DC, Maryland, Virginia (DMV) area and sends notifications when new properties matching your criteria are found.
+
+## Features
+
+- Create custom property searches with specific criteria
+- Scrape multiple real estate websites for property listings
+- Get email notifications when new properties are found
+- View and manage your property searches
+- Track properties you're interested in
+- Supports filtering by price, bedrooms, bathrooms, and location
+
+## Tech Stack
+
+- **Frontend**: Next.js, TypeScript, Tailwind CSS (with tw- prefix)
+- **Backend**: Next.js API Routes
+- **Database**: PostgreSQL with Prisma ORM
+- **Web Scraping**: Puppeteer
+- **Deployment**: Vercel (recommended)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js 18+ and npm
+- PostgreSQL database
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up your environment variables in a `.env` file:
+   ```
+   DATABASE_URL="postgresql://username:password@localhost:5432/property_scrape?schema=public"
+   ```
+4. Set up the database:
+   ```bash
+   npx prisma migrate dev --name init
+   ```
+5. Run the development server:
+   ```bash
+   npm run dev
+   ```
+6. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Usage
 
-## Learn More
+1. Create a new property search with your criteria
+2. The system will scrape real estate websites based on your search
+3. When new properties are found, you'll receive an email notification
+4. View and manage your searches on the dashboard
 
-To learn more about Next.js, take a look at the following resources:
+## Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+This project is designed to be deployed to Vercel:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Push your code to a GitHub repository
+2. Import the project in Vercel
+3. Set up the required environment variables
+4. Deploy!
 
-## Deploy on Vercel
+## Legal Disclaimer
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This application is for personal use only. Please ensure you respect the terms of service of any websites you scrape. Some websites prohibit scraping, and this tool should be used responsibly and in accordance with all applicable laws and terms of service.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT

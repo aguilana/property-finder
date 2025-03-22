@@ -1,8 +1,13 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #E8F1F2;
+  --foreground: #001A23;
+  --accent-light: #F0EBB1;
+  --accent-medium: #7A9E7E;
+  --accent-dark: #31493C;
 }
 
 @theme inline {
@@ -14,8 +19,11 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #001A23;
+    --foreground: #E8F1F2;
+    --accent-light: #7A9E7E;
+    --accent-medium: #31493C;
+    --accent-dark: #F0EBB1;
   }
 }
 
@@ -23,4 +31,29 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Custom utility classes */
+.bg-accent-light {
+  background-color: var(--accent-light);
+}
+
+.bg-accent-medium {
+  background-color: var(--accent-medium);
+}
+
+.bg-accent-dark {
+  background-color: var(--accent-dark);
+}
+
+.text-accent-light {
+  color: var(--accent-light);
+}
+
+.text-accent-medium {
+  color: var(--accent-medium);
+}
+
+.text-accent-dark {
+  color: var(--accent-dark);
 }
