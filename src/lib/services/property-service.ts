@@ -141,11 +141,27 @@ export class PropertyService {
   }
 
   async getPropertiesBySearch(searchId: string, userId: string): Promise<Property[]> {
-    // First verify the search belongs to the user
+    // First check if userId is a Clerk ID or internal ID
+    let userIdToUse = userId;
+    
+    // Check if this is a Clerk ID
+    if (userId.startsWith('user_')) {
+      const user = await prisma.user.findFirst({
+        where: { clerkId: userId }
+      });
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      userIdToUse = user.id;
+    }
+    
+    // Then verify the search belongs to the user
     const search = await prisma.propertySearch.findFirst({
       where: {
         id: searchId,
-        userId
+        userId: userIdToUse
       }
     });
     

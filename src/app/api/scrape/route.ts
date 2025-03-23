@@ -9,12 +9,16 @@ export async function POST(req: NextRequest) {
   try {
     const { userId } = getAuth(req);
 
+    console.log('User ID:', userId);
+
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
     const { searchId } = body;
+
+    console.log('Search ID:', searchId);
 
     if (!searchId) {
       return NextResponse.json(
@@ -23,13 +27,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify the search belongs to the user
+    // Find internal user ID from Clerk ID
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: userId },
+          { clerkId: userId }
+        ]
+      }
+    });
+    
+    if (!user) {
+      console.log(`No user found for Clerk ID: ${userId}`);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    
+    console.log(`Found user with ID: ${user.id}`);
+    
+    // Verify the search belongs to the user using internal ID
     const search = await prisma.propertySearch.findFirst({
       where: {
         id: searchId,
-        userId: userId,
+        userId: user.id,
       },
     });
+
+    console.log('Search:', search);
 
     if (!search) {
       return NextResponse.json(
