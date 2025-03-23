@@ -3,6 +3,5 @@
   "installCommand": "npm install",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "generateBuildId": "false",
   "cleanUrls": true
 }
