@@ -62,25 +62,27 @@ model VerificationToken {
 }
 
 model Property {
-  id          String   @id @default(cuid())
-  address     String
-  city        String
-  state       String
-  zipCode     String
-  price       Float
-  bedrooms    Int
-  bathrooms   Float
-  squareFeet  Int?
-  yearBuilt   Int?
-  description String?  @db.Text
-  propertyType String
-  url         String   @unique
-  imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  source      String   // Website source (e.g., "zillow", "redfin")
-  isNotified  Boolean  @default(false)
-  searches    PropertySearch[]
+  id                String           @id @default(cuid())
+  address           String
+  city              String
+  state             String
+  zipCode           String
+  price             Float
+  bedrooms          Int
+  bathrooms         Float
+  squareFeet        Int?
+  yearBuilt         Int?
+  description       String?          @db.Text
+  propertyType      String
+  url               String           @unique
+  imageUrl          String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  source            String           // Website source (e.g., "zillow", "redfin")
+  isNotified        Boolean          @default(false)
+  notificationStatus String?         // "success", "failed", null (not attempted)
+  searches          PropertySearch[]
+  notificationLogs  NotificationLog[]
 }
 
 model PropertySearch {
@@ -110,4 +112,14 @@ model ScrapeLog {
   newItems     Int      @default(0)
   status       String   // "success", "failed", "running"
   errorMessage String?
+}
+
+model NotificationLog {
+  id            String    @id @default(cuid())
+  userId        String
+  propertyId    String
+  status        String    // "success", "failed"
+  errorMessage  String?
+  createdAt     DateTime  @default(now())
+  property      Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 }

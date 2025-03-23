@@ -54,20 +54,37 @@ export abstract class BaseScraper {
     const propertyLocationWithZip = `${property.city}, ${property.state} ${property.zipCode}`.toLowerCase();
     const zipCodeOnly = property.zipCode?.toLowerCase() || '';
     
+    console.log(`Checking if property location "${propertyLocation}" or ZIP "${zipCodeOnly}" matches any of: ${this.options.locations.join(', ')}`);
+    
     // Compare against each specified location
     for (const location of this.options.locations) {
       const locationLower = location.toLowerCase();
       
-      // Check if this is a ZIP code match
-      if (locationLower.match(/^\d{5}$/) && (zipCodeOnly === locationLower)) {
-        console.log(`ZIP code match: ${zipCodeOnly} matches ${locationLower}`);
+      // Direct ZIP code comparison - highest priority match
+      if (locationLower.match(/^\d{5}$/) && zipCodeOnly === locationLower) {
+        console.log(`✓ Direct ZIP code match: ${zipCodeOnly} equals ${locationLower}`);
         matchesLocation = true;
         break;
       }
       
-      // Check if city/state includes the location
+      // ZIP code included in property location
+      if (locationLower.match(/^\d{5}$/) && propertyLocationWithZip.includes(locationLower)) {
+        console.log(`✓ ZIP code found in address: ${propertyLocationWithZip} contains ${locationLower}`);
+        matchesLocation = true;
+        break;
+      }
+      
+      // City name match (exact or contained)
+      const cityNameLower = property.city.toLowerCase();
+      if (cityNameLower === locationLower || cityNameLower.includes(locationLower) || locationLower.includes(cityNameLower)) {
+        console.log(`✓ City name match: "${cityNameLower}" matches "${locationLower}"`);
+        matchesLocation = true;
+        break;
+      }
+      
+      // Full location string check
       if (propertyLocation.includes(locationLower) || propertyLocationWithZip.includes(locationLower)) {
-        console.log(`Location match: ${propertyLocation} matches ${locationLower}`);
+        console.log(`✓ Location string match: "${propertyLocation}" contains "${locationLower}"`);
         matchesLocation = true;
         break;
       }

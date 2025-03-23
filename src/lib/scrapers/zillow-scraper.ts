@@ -7,19 +7,197 @@ export class ZillowScraper extends BaseScraper {
     super(options, 'zillow');
   }
 
+  /**
+   * Handles Zillow's "Press and Hold" captcha verification
+   * @param page Puppeteer page object
+   */
+  private async handlePressAndHoldCaptcha(page: puppeteer.Page): Promise<void> {
+    console.log('Checking for captcha...');
+
+    // Try to find captcha elements
+    const captchaSelectors = [
+      // Common selectors that might indicate a captcha
+      'iframe[title*="recaptcha"]',
+      'iframe[src*="captcha"]',
+      '.captcha-container',
+      '#captcha',
+      // Zillow-specific press-and-hold selectors
+      '.captcha-holder',
+      '[data-testid="challenge-stage-holder"]',
+      '[data-testid="challenge"]',
+      'button[data-testid="hold-button"]',
+      '.recaptcha-checkbox-checkmark',
+    ];
+
+    let captchaFound = false;
+
+    for (const selector of captchaSelectors) {
+      const captchaExists = await page.evaluate((sel) => {
+        return document.querySelector(sel) !== null;
+      }, selector);
+
+      if (captchaExists) {
+        captchaFound = true;
+        console.log(`Captcha found with selector: ${selector}`);
+        break;
+      }
+    }
+
+    if (!captchaFound) {
+      console.log('No captcha detected, continuing...');
+      return;
+    }
+
+    // Take a screenshot of the captcha for debugging
+    await page.screenshot({ path: 'captcha-detected.png' });
+    console.log('Screenshot saved of captcha page');
+
+    try {
+      // Try to find and handle a press-and-hold button
+      const holdButton =
+        (await page.$('[data-testid="hold-button"]')) ||
+        (await page.$('.captcha-holder button')) ||
+        (await page.$('.g-recaptcha'));
+
+      if (holdButton) {
+        console.log('Found press-and-hold button, attempting to solve...');
+
+        // Get button position
+        const buttonBox = await holdButton.boundingBox();
+
+        if (buttonBox) {
+          // Move to button
+          await page.mouse.move(
+            buttonBox.x + buttonBox.width / 2,
+            buttonBox.y + buttonBox.height / 2
+          );
+
+          // Press and hold for a random duration (3-5 seconds to appear human-like)
+          const holdDuration = Math.floor(Math.random() * 2000) + 3000;
+          console.log(`Pressing and holding for ${holdDuration}ms...`);
+
+          await page.mouse.down();
+          await page.waitForTimeout(holdDuration);
+          await page.mouse.up();
+
+          // Wait for captcha to process
+          await page.waitForTimeout(2000);
+
+          // Take another screenshot to see if it worked
+          await page.screenshot({ path: 'after-captcha-attempt.png' });
+          console.log('Screenshot saved after captcha attempt');
+
+          // Check if we're now on the search results page
+          const resultsExist = await page.evaluate(() => {
+            return (
+              document.querySelector('[data-test="property-card"]') !== null ||
+              document.querySelector('.photo-cards') !== null
+            );
+          });
+
+          if (resultsExist) {
+            console.log('Successfully passed captcha verification!');
+          } else {
+            console.log('Still seeing captcha or verification page');
+
+            // Give user a chance to manually solve if in non-headless mode
+            if (await this.isNonHeadless(page)) {
+              console.log(
+                'Browser is in non-headless mode. Waiting 30 seconds for manual captcha solving...'
+              );
+              await page.waitForTimeout(30000);
+            }
+          }
+        }
+      } else {
+        console.log('Could not find a specific hold button');
+
+        // If in non-headless mode, wait for manual intervention
+        if (await this.isNonHeadless(page)) {
+          console.log(
+            'Browser is in non-headless mode. Waiting 30 seconds for manual captcha solving...'
+          );
+          await page.waitForTimeout(30000);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling captcha:', error);
+    }
+  }
+
+  /**
+   * Check if browser is running in non-headless mode
+   */
+  private async isNonHeadless(page: puppeteer.Page): Promise<boolean> {
+    return await page.evaluate(() => {
+      return window.navigator.webdriver === false;
+    });
+  }
+
   async scrape(): Promise<Property[]> {
     const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      headless: false, // Use non-headless mode to appear more human-like
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled', // Hide automation flags
+        '--window-size=1920,1080', // Use a standard window size
+      ],
     });
 
     try {
       const page = await browser.newPage();
 
-      // Set user agent to avoid being blocked
+      // More sophisticated browser fingerprinting evasion
+      await page.evaluateOnNewDocument(() => {
+        // Override the navigator.webdriver property
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => false,
+        });
+
+        // Override Chrome automation properties
+        window.navigator.chrome = {
+          runtime: {},
+        };
+
+        // Override permissions
+        const originalQuery = window.navigator.permissions.query;
+        window.navigator.permissions.query = (parameters) =>
+          parameters.name === 'notifications'
+            ? Promise.resolve({ state: Notification.permission })
+            : originalQuery(parameters);
+
+        // Override plugins array to look more like a real browser
+        Object.defineProperty(navigator, 'plugins', {
+          get: () => [
+            {
+              0: {
+                type: 'application/x-google-chrome-pdf',
+                suffixes: 'pdf',
+                description: 'Portable Document Format',
+              },
+              description: 'Chrome PDF Plugin',
+              filename: 'internal-pdf-viewer',
+              length: 1,
+              name: 'Chrome PDF Plugin',
+            },
+          ],
+        });
+      });
+
+      // Set user agent of a real browser with common configuration
       await page.setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
       );
+
+      // Add extra headers that a real browser would have
+      await page.setExtraHTTPHeaders({
+        'Accept-Language': 'en-US,en;q=0.9',
+        Accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        Connection: 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+      });
 
       const properties: Partial<Property>[] = [];
 
@@ -52,6 +230,9 @@ export class ZillowScraper extends BaseScraper {
         try {
           await page.goto(url, { waitUntil: 'networkidle2' });
 
+          // Check for and handle the "Press and Hold" captcha
+          await this.handlePressAndHoldCaptcha(page);
+
           // Wait for property cards to load - use article tag with data-test attribute
           console.log('Waiting for property cards to load...');
           await page
@@ -81,9 +262,9 @@ export class ZillowScraper extends BaseScraper {
             const listSelectors = [
               'ul.photo-cards',
               '.List-c11n-8-109-3__sc-1smrmqp-0',
-              '.StyledSearchListWrapper-srp-8-109-3__sc-1ieen0c-0'
+              '.StyledSearchListWrapper-srp-8-109-3__sc-1ieen0c-0',
             ];
-            
+
             let propertyList = null;
             for (const selector of listSelectors) {
               const list = document.querySelector(selector);
@@ -93,44 +274,54 @@ export class ZillowScraper extends BaseScraper {
                 break;
               }
             }
-            
+
             // Find property cards - either by getting list items or direct article elements
             let items = [];
-            
+
             // Option 1: Find through list items
             if (propertyList) {
               const listItems = propertyList.querySelectorAll('li');
-              console.log(`Found ${listItems.length} list items in property list`);
-              
+              console.log(
+                `Found ${listItems.length} list items in property list`
+              );
+
               // Each list item should contain a property card
-              items = Array.from(listItems).map(li => {
-                // Find the article inside the list item
-                return li.querySelector('article[data-test="property-card"]') || li;
-              }).filter(item => item != null);
-              
+              items = Array.from(listItems)
+                .map((li) => {
+                  // Find the article inside the list item
+                  return (
+                    li.querySelector('article[data-test="property-card"]') || li
+                  );
+                })
+                .filter((item) => item != null);
+
               if (items.length > 0) {
-                console.log(`Found ${items.length} property cards inside list items`);
+                console.log(
+                  `Found ${items.length} property cards inside list items`
+                );
               }
             }
-            
+
             // Option 2: If no items found via list, try direct article selectors
             if (items.length === 0) {
               const cardSelectors = [
                 'article[data-test="property-card"]',
                 '[data-test="property-card"]',
                 '.property-card',
-                '.list-card'
+                '.list-card',
               ];
-              
+
               for (const selector of cardSelectors) {
                 items = Array.from(document.querySelectorAll(selector));
                 if (items.length > 0) {
-                  console.log(`Found ${items.length} items with direct selector: ${selector}`);
+                  console.log(
+                    `Found ${items.length} items with direct selector: ${selector}`
+                  );
                   break;
                 }
               }
             }
-            
+
             console.log(`Processing ${items.length} property items`);
             return items.map((item) => {
               // Price - try multiple selectors

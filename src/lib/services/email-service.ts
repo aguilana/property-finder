@@ -11,7 +11,30 @@ export class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    this.transporter = nodemailer.createTransport(process.env.EMAIL_SERVER || '');
+    // Check if we have a full SMTP URL or need to build config from parts
+    if (process.env.EMAIL_SERVER && process.env.EMAIL_SERVER.includes('://')) {
+      this.transporter = nodemailer.createTransport(process.env.EMAIL_SERVER);
+    } else {
+      // Create configuration from individual environment variables
+      const config = {
+        host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.EMAIL_PORT || '587'),
+        secure: process.env.EMAIL_SECURE === 'true',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD
+        }
+      };
+      
+      console.log('Email configuration:', { 
+        host: config.host, 
+        port: config.port, 
+        secure: config.secure,
+        auth: config.auth.user ? { user: config.auth.user, pass: '********' } : undefined
+      });
+      
+      this.transporter = nodemailer.createTransport(config);
+    }
   }
 
   async sendPropertyNotification(property: Property, email: string): Promise<void> {

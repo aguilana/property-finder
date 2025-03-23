@@ -118,7 +118,14 @@ export class PropertyService {
       return;
     }
     
+    // Skip sending to placeholder emails
+    if (user.email.includes('@example.com')) {
+      console.log(`Skipping notification to placeholder email: ${user.email}`);
+      return;
+    }
+    
     try {
+      console.log(`Attempting to send notification to ${user.email} for property: ${property.address}`);
       await emailService.sendPropertyNotification(property, user.email);
       
       // Mark property as notified
@@ -130,6 +137,28 @@ export class PropertyService {
       console.log(`Notification sent to ${user.email} for property: ${property.address}`);
     } catch (error) {
       console.error('Failed to send notification:', error);
+      
+      // Still mark as attempted notification to avoid repeated failures
+      await prisma.property.update({
+        where: { id: property.id },
+        data: { 
+          isNotified: true,
+          notificationStatus: 'failed'
+        }
+      });
+      
+      // Record error in notification log
+      await prisma.notificationLog.create({
+        data: {
+          userId: user.id,
+          propertyId: property.id,
+          status: 'failed',
+          errorMessage: error instanceof Error ? error.message : String(error)
+        }
+      }).catch(err => {
+        // If log creation fails, just continue
+        console.error('Failed to create notification log:', err);
+      });
     }
   }
 
