@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
 
 export default function Home() {
-  const { isLoaded, isSignedIn } = useUser();
+  const { isSignedIn } = useUser();
 
   return (
     <div className="tw-min-h-screen tw-flex tw-flex-col">
@@ -94,7 +94,7 @@ export default function Home() {
             </div>
             <div className="tw-bg-white tw-p-4 tw-rounded tw-shadow">
               <h3 className="tw-font-semibold">Maryland</h3>
-              <p className="tw-text-sm tw-text-gray-600">Montgomery, Prince George's</p>
+              <p className="tw-text-sm tw-text-gray-600">Montgomery, Prince George&apos;s</p>
             </div>
             <div className="tw-bg-white tw-p-4 tw-rounded tw-shadow">
               <h3 className="tw-font-semibold">Suburbs</h3>

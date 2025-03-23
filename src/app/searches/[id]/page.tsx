@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useUser } from '@clerk/nextjs';
 import { use } from 'react';
 
@@ -37,19 +38,19 @@ export default function SearchDetail({ params }: { params: { id: string } }) {
   const searchId = use(params).id;
   console.log('Search ID /app/search/[id]:', searchId);
   const router = useRouter();
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn } = useUser();
   const [search, setSearch] = useState<Search | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Redirect if not authenticated
-  if (isLoaded && !isSignedIn) {
-    router.push('/login');
-    return null;
-  }
-
   useEffect(() => {
+    // Redirect if not authenticated
+    if (isLoaded && !isSignedIn) {
+      router.push('/login');
+      return;
+    }
+
     if (isLoaded && isSignedIn && searchId) {
       console.log('Fetching search details for ID:', {
         isLoaded,
@@ -58,7 +59,7 @@ export default function SearchDetail({ params }: { params: { id: string } }) {
       });
       fetchSearchDetails(searchId);
     }
-  }, [isLoaded, isSignedIn, searchId]);
+  }, [isLoaded, isSignedIn, searchId, router]);
 
   const fetchSearchDetails = async (searchId: string) => {
     console.log('Fetching search details function');

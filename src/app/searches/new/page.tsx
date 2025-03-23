@@ -7,7 +7,7 @@ import { useUser } from '@clerk/nextjs';
 
 export default function NewSearch() {
   const router = useRouter();
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn } = useUser();
   const [formData, setFormData] = useState({
     name: '',
     minPrice: '',

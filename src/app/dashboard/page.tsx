@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { UserButton, useUser } from '@clerk/nextjs';
 
@@ -39,18 +40,18 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Redirect if not authenticated
-  if (isLoaded && !isSignedIn) {
-    router.push('/login');
-    return null;
-  }
-
   useEffect(() => {
+    // Redirect if not authenticated
+    if (isLoaded && !isSignedIn) {
+      router.push('/login');
+      return;
+    }
+
     if (isLoaded && isSignedIn) {
       fetchSearches();
       fetchRecentProperties();
     }
-  }, [isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, router]);
 
   const fetchSearches = async () => {
     try {
@@ -178,7 +179,7 @@ export default function Dashboard() {
             {searches.length === 0 ? (
               <div className='tw-text-center tw-py-8'>
                 <p className='tw-text-gray-500 tw-mb-4'>
-                  You don't have any property searches yet.
+                  You don&apos;t have any property searches yet.
                 </p>
                 <Link
                   href='/searches/new'
